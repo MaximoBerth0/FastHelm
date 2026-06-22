@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard · Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Role gating: hide role-tagged content until app.js confirms the role.
+         Prevents a flash of content the user isn't allowed to see. -->
+    <style>
+        [data-roles]:not(.role-ok) { display: none !important; }
+    </style>
+</head>
+<body class="bg-base-300 min-h-screen">
+
+    <!-- top navigation -->
+    <div class="navbar bg-base-100 shadow-md px-4">
+        <div class="flex-1">
+            <span class="text-xl font-bold">Management</span>
+        </div>
+        <div class="flex-none gap-2">
+            <button id="refresh-btn" class="btn btn-ghost btn-sm">Refresh session</button>
+            <button id="logout-btn" class="btn btn-outline btn-sm">Logout</button>
+        </div>
+    </div>
+
+    <main class="p-6 flex flex-col items-center gap-6">
+
+        <!-- Role-gated panels. Roles: admin, employee, client (SYSTEM_ROLES).
+             Comma-separate to allow several, e.g. data-roles="admin,employee". -->
+        <div data-roles="admin" class="card w-96 bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title">Admin tools</h2>
+                <p>User management, roles and full inventory/order control.</p>
+            </div>
+        </div>
+
+        <div data-roles="admin,employee" class="card w-96 bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title">Inventory &amp; orders</h2>
+                <p>Visible to staff — admins and employees.</p>
+            </div>
+        </div>
+
+        <div data-roles="client" class="card w-96 bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title">My account</h2>
+                <p>Client-facing view.</p>
+            </div>
+        </div>
+
+        <!-- change password -->
+        <div class="card w-96 bg-base-100 shadow-xl">
+            <div class="card-body">
+                <h2 class="card-title">Change password</h2>
+                <form id="change-password-form" class="space-y-4">
+                    <input type="password" id="old_password" name="old_password" placeholder="Current password"
+                        class="input input-bordered w-full" minlength="8" maxlength="50" required />
+
+                    <input type="password" id="new_password" name="new_password" placeholder="New password"
+                        class="input input-bordered w-full" minlength="8" maxlength="50" required />
+
+                    <button type="submit" class="btn btn-primary w-full">Update password</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/auth/session.js"></script> 
+    <script src="../js/app.js"></script>
+
+</body>
+</html>

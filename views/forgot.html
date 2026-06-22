@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset password · Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-base-300 min-h-screen flex items-center justify-center">
+
+    <div class="card w-96 bg-base-100 shadow-xl">
+        <div class="card-body">
+            <!-- step 1: request a reset email -->
+            <h2 class="card-title justify-center text-2xl font-bold mb-4">Forgot password</h2>
+            <form id="forgot-form" class="space-y-4">
+                <input type="email" id="forgot-email" name="email" placeholder="Email"
+                    class="input input-bordered w-full" required />
+                <button type="submit" class="btn btn-primary w-full">Send reset link</button>
+            </form>
+
+            <div class="divider">already have a token?</div>
+
+            <!-- step 2: redeem the token from the email -->
+            <form id="reset-form" class="space-y-4">
+                <input type="text" id="reset-token" name="token" placeholder="Reset token"
+                    class="input input-bordered w-full" required />
+                <input type="password" id="reset-password" name="new_password" placeholder="New password"
+                    class="input input-bordered w-full" minlength="8" maxlength="50" required />
+                <button type="submit" class="btn btn-secondary w-full">Reset password</button>
+            </form>
+
+            <a href="../index.html" class="link link-hover text-sm text-center mt-2">Back to login</a>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script src="../js/auth/forgot.js"></script>
+</body>
+</html>
