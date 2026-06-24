@@ -2,15 +2,19 @@
 
 A lightweight token bucket rate limiter for FastAPI, with a Redis backend for distributed, multi-instance limiting.
 
+
 ## Overview
 
 Any public-facing API can be overwhelmed by too many requests in too little time, whether from a buggy client stuck in a retry loop, a scraper hammering an endpoint, an abusive actor, or simply more legitimate traffic than the backend can handle. Without a guardrail, a handful of callers can degrade the service for everyone, or run up costs that scale directly with request volume.
 
-That cost problem is sharpest in front of expensive backends. An endpoint that calls an LLM, runs a heavy query, or hits a paid third-party API pays real money (and latency) per request.
-
 FastHelm sits in front of your FastAPI routes and answers one question per request: *allow it, or reject it?* It uses the token bucket algorithm, which enforces an average rate while still permitting short, controlled bursts. The natural shape of real API traffic.
 
-The core logic is decoupled from the storage backend, so the same limiter runs on an in-memory backend during local development and on Redis in production without any change to the business logic or the HTTP layer. It starts simple — single process, in memory — and scales up to a distributed setup where several API instances share one Redis and stay correct under concurrency through an atomic Lua script.
+The core logic is decoupled from the storage backend, so the same limiter runs on an in-memory backend during local development and on Redis in production without any change to the business logic or the HTTP layer. It starts simple and single process in memory. Scales up to a distributed setup where several API instances share one Redis and stay correct under concurrency through an atomic Lua script.
+
+### Simple request flow 
+
+![Flow](docs/flow.png)
+
 
 ## Features
 
@@ -34,7 +38,8 @@ The core logic is decoupled from the storage backend, so the same limiter runs o
 The code is split into three independent layers — business logic, storage, and HTTP — each depending only on the interfaces of the layer below it.
 
 ```
-fasthelm/
+fasthelm/                # the importable package
+│
 ├── core/                # business logic — pure algorithm, no I/O
 │   ├── limiter.py       # RateLimiter protocol + Decision result
 │   └── token_bucket.py  # token bucket with lazy refill
@@ -49,6 +54,9 @@ fasthelm/
     ├── dependencies.py  # per-route dependency variant
     └── responses.py     # 429 response + rate-limit headers
 
+examples/
+ └── app.py          # demo FastAPI app — wiring + a sample endpoint
+   
 tests/
 pyproject.toml
 poetry.lock
