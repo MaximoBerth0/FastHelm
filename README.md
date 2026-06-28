@@ -25,6 +25,78 @@ The core logic is decoupled from the storage backend, so the same limiter runs o
 - **Standard HTTP semantics** — `429 Too Many Requests` with `Retry-After` and `X-RateLimit-*` headers.
 - **Flexible keying** — limit by client IP, API key, or a custom key function.
 
+## Try the example app
+
+`example/app.py` is a small FastAPI app with a web page: press a button, it fires 6 requests in one second, and you watch the limiter let the first few through and reject the rest with `429`.
+
+![demo](docs/demo.png)
+
+The quickest way to run it is Docker Compose, which starts Redis and the app together:
+
+```bash
+docker compose up --build
+```
+
+Then open http://localhost:8000 and press the button.
+
+To run it without Docker, start a Redis instance, then launch the app with Poetry:
+
+```bash
+poetry install
+poetry run uvicorn example.app:app --reload
+```
+
+The app reads `REDIS_URL` from the environment and falls back to `redis://localhost:6379`.
+
+## Use the library
+
+Install it into your own FastAPI project (it builds as `fast-helm`):
+
+```bash
+pip install fast-helm
+```
+
+Pick a backend, build a limiter, and attach it. There are two ways to wire it in.
+
+**As a per-route dependency** — apply the limit to specific endpoints:
+
+```python
+from fastapi import FastAPI, Depends
+from redis.asyncio import Redis
+
+from fasthelm.storage.redis import RedisTokenBucket
+from fasthelm.http.dependencies import RateLimit
+
+app = FastAPI()
+
+redis = Redis.from_url("redis://localhost:6379")
+limiter = RedisTokenBucket(redis, capacity=3, refill_rate=1.0)
+rate_limit = RateLimit(limiter)  # default keying: per client IP
+
+@app.get("/api/ping", dependencies=[Depends(rate_limit)])
+async def ping():
+    return {"status": "ok"}
+```
+
+**As middleware** — apply the limit to every route:
+
+```python
+from fasthelm.http.middleware import RateLimitMiddleware
+
+app.add_middleware(RateLimitMiddleware, limiter=limiter)
+```
+
+For local development without Redis, swap in the in-memory backend — same logic, single process, no external dependency:
+
+```python
+from fasthelm.core.token_bucket import TokenBucket
+from fasthelm.storage.memory import MemoryStorage
+
+limiter = TokenBucket(MemoryStorage(), capacity=3, refill_rate=1.0)
+```
+
+`capacity` is the burst size (the most requests allowed at once) and `refill_rate` is the sustained rate in tokens per second. Pass `key_func=...` to either `RateLimit` or `RateLimitMiddleware` to limit by API key or a custom key instead of client IP.
+
 ## Tech stack
 
 - Python 3.14+
@@ -54,7 +126,7 @@ fasthelm/                # the importable package
     ├── dependencies.py  # per-route dependency variant
     └── responses.py     # 429 response + rate-limit headers
 
-examples/
+example/
  └── app.py          # demo FastAPI app — wiring + a sample endpoint
    
 tests/
