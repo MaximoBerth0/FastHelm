@@ -97,6 +97,37 @@ limiter = TokenBucket(MemoryStorage(), capacity=3, refill_rate=1.0)
 
 `capacity` is the burst size (the most requests allowed at once) and `refill_rate` is the sustained rate in tokens per second. Pass `key_func=...` to either `RateLimit` or `RateLimitMiddleware` to limit by API key or a custom key instead of client IP.
 
+## Public API
+
+These are the names intended for use from your own code, grouped by layer.
+
+### Limiters
+
+A limiter is anything that implements the `RateLimiter` protocol — a single `async check(key, cost=1)` method that returns a `Decision`. Two are built in:
+
+- `TokenBucket(storage, capacity, refill_rate, now=time.monotonic)` — `fasthelm.core.token_bucket`. In-process limiter; pairs with a storage backend.
+  - `await check(key, cost=1) -> Decision` — refill, decide, and persist the bucket for `key`.
+- `RedisTokenBucket(redis, capacity, refill_rate)` — `fasthelm.storage.redis`. Distributed limiter backed by an atomic Lua script; takes a `redis.asyncio.Redis` client.
+  - `await check(key, cost=1) -> Decision` — same contract, evaluated atomically in Redis.
+
+### Storage backends
+
+Passed to `TokenBucket`. Any object satisfying the `Storage` protocol (`fasthelm.storage.base`) works:
+
+- `MemoryStorage()` — `fasthelm.storage.memory`. In-process, lock-based state for a single instance.
+
+### HTTP integration
+
+- `RateLimitMiddleware(app, limiter, key_func=client_ip_key)` — `fasthelm.http.middleware`. ASGI middleware that limits every route; attach with `app.add_middleware(...)`.
+- `RateLimit(limiter, key_func=client_ip_key)` — `fasthelm.http.dependencies`. Callable FastAPI dependency for per-route limiting; use with `Depends(...)`.
+- `client_ip_key(request) -> str` — `fasthelm.http.middleware`. Default key function; one bucket per client IP. Supply your own `key_func` to limit by API key or a custom value.
+- `rate_limit_headers(decision) -> dict[str, str]` — `fasthelm.http.responses`. Builds the `X-RateLimit-*` headers from a `Decision`.
+- `too_many_requests(decision) -> JSONResponse` — `fasthelm.http.responses`. A ready-made `429` response with `Retry-After` and rate-limit headers.
+
+### Result type
+
+- `Decision` — `fasthelm.core.limiter`. Frozen dataclass returned by every limiter, with fields `allowed`, `limit`, `remaining`, `reset_after`, and `retry_after`.
+
 ## Tech stack
 
 - Python 3.14+
